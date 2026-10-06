@@ -5,10 +5,10 @@ use Illuminate\Support\Facades\Route;
 
 Route::controller(fileController::class)->group(function(){
     Route::get('/', 'index');
+    Route::get('/claim/download', 'downloadClaim')->name('claim.download');
 });
 
 Route::controller(fileController::class)->group(function(){
     Route::post('/', 'store');
 });
-
 

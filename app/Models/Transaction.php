@@ -7,12 +7,12 @@ use Illuminate\Database\Eloquent\Model;
 class Transaction extends Model
 {
     protected $fillable = [
-        'Transaction Id',
-        'Date/Time',
-        'Type',
-        'Sector',
-        'Entry Location',
-        'Exit Location',
-        'Amount'
+        'transaction_id',
+        'date_time',
+        'type',
+        'sector',
+        'entry_location',
+        'exit_location',
+        'amount',
     ];
 }

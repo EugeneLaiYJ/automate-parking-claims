@@ -43,8 +43,13 @@ class fileController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function downloadClaim()
+    public function downloadClaim(Request $request)
     {
+        $validated = $request->validate([
+            'month' => ['required', 'integer', 'between:1,12'],
+        ]);
+        $month = (int) $validated['month'];
+
         $filePath = base_path('resources/js/lib/PFE CLAIM FORM TEMPLATE.xlsx');
         $spreadsheet = IOFactory::load($filePath);
 
@@ -53,17 +58,31 @@ class fileController extends Controller
             ->orderBy('transaction_id')
             ->get();
 
-        foreach ($transactions as $index => $transaction) {
-            $row = SPREADSHEET_FIRST_ROW + $index;
-            if($transaction->sector == "PARKING"){
-                $worksheet->setCellValue(SPREADSHEET_DESCRIPTION_COLUMN.$row, $transaction->sector);
-            }else{
-                break;
+        $row = SPREADSHEET_FIRST_ROW;
+        $currentDate = now()->format('Y-m-d');
+
+        $worksheet->setCellValue('B5',"NAME: Lai Yong Jun");
+        $worksheet->setCellValue('D5',"DATE: " . $currentDate);
+
+        foreach ($transactions as $transaction) {
+            $transactionDate = \Carbon\Carbon::parse($transaction->date_time);
+            if ((int) $transactionDate->format('n') !== $month) {
+                continue;
             }
-            $transactionDate=$transaction->date_time;
-            $formatDate=strstr($transactionDate," ", true);
-            $worksheet->setCellValue(SPREADSHEET_DATE_COLUMN.$row, $formatDate);
-            $worksheet->setCellValue(SPREADSHEET_AMOUNT_COLUMN.$row, $transaction->amount);
+            if ($transaction->sector !== 'PARKING' || !str_contains($transaction->entry_location, 'EMHUB')) {
+                continue;
+            }
+            if ($row>14+SPREADSHEET_FIRST_ROW){
+                $worksheet->insertNewRowBefore($row);
+                $worksheet->setCellValue(SPREADSHEET_NUMBER_COLUMN . $row, "=" . SPREADSHEET_NUMBER_COLUMN . $row-1 . "+1");
+                $worksheet->setCellValue(SPREADSHEET_NUMBER_COLUMN . $row+1, "=" . SPREADSHEET_NUMBER_COLUMN . $row . "+1");
+                $worksheet->setCellValue(SPREADSHEET_NUMBER_COLUMN . $row+2, "=" . SPREADSHEET_NUMBER_COLUMN . $row+1 . "+1");
+                $worksheet->setCellValue(SPREADSHEET_AMOUNT_COLUMN . $row+2, "=SUM(D8:".SPREADSHEET_AMOUNT_COLUMN. $row+1 .")");
+            }
+            $worksheet->setCellValue(SPREADSHEET_DESCRIPTION_COLUMN . $row, $transaction->sector);
+            $worksheet->setCellValue(SPREADSHEET_DATE_COLUMN . $row, $transactionDate->format('Y-m-d'));
+            $worksheet->setCellValue(SPREADSHEET_AMOUNT_COLUMN . $row, $transaction->amount);
+            $row++;
         }
 
         $downloadPath = tempnam(sys_get_temp_dir(), 'claim_');
@@ -80,7 +99,7 @@ class fileController extends Controller
         }
 
         return response()
-            ->download($downloadPath, 'PFE CLAIM FORM TEMPLATE.xlsx')
+            ->download($downloadPath, 'PFE CLAIM FORM ' . $currentDate . '.xlsx')
             ->deleteFileAfterSend(true);
     }
 

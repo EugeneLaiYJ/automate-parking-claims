@@ -13,8 +13,21 @@
 
     let { transactions = [] }: { transactions?: TransactionRow[] } = $props();
 
-    function downloadClaim() {
-        window.location.href = '/claim/download';
+    function downloadClaim(event: SubmitEvent) {
+        event.preventDefault();
+
+        if (!(event.currentTarget instanceof HTMLFormElement)) {
+            return;
+        }
+
+        const formData = new FormData(event.currentTarget);
+        const month = formData.get('month');
+
+        if (typeof month !== 'string') {
+            return;
+        }
+
+        window.location.href = `/claim/download?month=${encodeURIComponent(month)}`;
     }
 
     function uploadFile(event: SubmitEvent) {
@@ -42,8 +55,25 @@
         </form>
     </section>
     <section>
-        <h2>Generate Claim</h2>
-        <button type="button" onclick={downloadClaim}>Generate</button>
+        <h2>Generate Claim for MONTH:</h2>
+        <form onsubmit={downloadClaim}>
+            <select id="month" name="month" required>
+                <option value="1">1</option>
+                <option value="2">2</option>
+                <option value="3">3</option>
+                <option value="4">4</option>
+                <option value="5">5</option>
+                <option value="6">6</option>
+                <option value="7">7</option>
+                <option value="8">8</option>
+                <option value="9">9</option>
+                <option value="10">10</option>
+                <option value="11">11</option>
+                <option value="12">12</option>
+            </select>
+            <button type="submit">Generate</button>
+        </form>
+        
     </section>
     <section>
         <h2>Transactions</h2>
